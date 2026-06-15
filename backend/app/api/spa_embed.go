@@ -28,7 +28,7 @@ func mountSPA(r *router.Router[*core.RequestEvent]) {
 	}
 
 	registerSPAMimes()
-	r.GET("/{path...}", func(e *core.RequestEvent) error {
+	serve := func(e *core.RequestEvent) error {
 		requestedPath := e.Request.URL.Path
 		if strings.HasPrefix(requestedPath, "/api/") || strings.HasPrefix(requestedPath, "/_") {
 			return os.ErrNotExist
@@ -37,7 +37,11 @@ func mountSPA(r *router.Router[*core.RequestEvent]) {
 			return nil
 		}
 		return tryServeSPAFromDisk(e, dir, "/index.html")
-	})
+	}
+	// PocketBase auto-registers a JSON 404 for "/" unless HasRoute("", "/") is true.
+	// Use a method-agnostic "/" route (not GET /) so it doesn't conflict with GET /{path...}.
+	r.Route("", "/", serve)
+	r.GET("/{path...}", serve)
 }
 
 func tryServeSPAFromDisk(e *core.RequestEvent, dir, requestedPath string) error {
@@ -68,6 +72,7 @@ func tryServeSPAFromDisk(e *core.RequestEvent, dir, requestedPath string) error 
 }
 
 func registerSPAMimes() {
+	_ = mime.AddExtensionType(".html", "text/html; charset=utf-8")
 	_ = mime.AddExtensionType(".js", "application/javascript")
 	_ = mime.AddExtensionType(".mjs", "application/javascript")
 	_ = mime.AddExtensionType(".webmanifest", "application/manifest+json")
