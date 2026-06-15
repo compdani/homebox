@@ -1,5 +1,16 @@
 # Tips and Tricks
 
+## Install as App (PWA)
+
+Homebox can be installed as a Progressive Web App on your phone, tablet, or desktop. The installed app opens in its own window and caches the UI for faster loading.
+
+**Desktop / Android:** Use your browser's install option (e.g. Chrome's "Install app" icon in the address bar).
+
+**iOS:** Tap Share, then **Add to Home Screen**.
+
+!!! note
+    Homebox requires a connection to your server for inventory data. Offline mode only caches the app shell — you cannot browse or edit items without network access.
+
 ## Custom Fields
 
 Custom fields are a great way to add any extra information to your item. The following types are supported:

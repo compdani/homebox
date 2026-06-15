@@ -138,6 +138,12 @@ tasks:
     cmds:
       - pnpm run typecheck
 
+  ui:build:
+    desc: Build frontend static output (for PWA testing)
+    dir: frontend
+    cmds:
+      - pnpm build
+
   test:ci:
     desc: Runs end-to-end test on a live server (only for use in CI)
     cmds:

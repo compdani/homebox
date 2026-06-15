@@ -7,6 +7,7 @@
     <Meta name="theme-color" content="#5b7f67" />
     <Link rel="manifest" href="/manifest.webmanifest" />
     <NuxtPage />
+    <PwaReloadPrompt />
   </NuxtLayout>
 </template>
 

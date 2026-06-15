@@ -46,4 +46,6 @@ func tryServeSPA(e *core.RequestEvent, requestedPath string) error {
 func registerSPAMimes() {
 	_ = mime.AddExtensionType(".js", "application/javascript")
 	_ = mime.AddExtensionType(".mjs", "application/javascript")
+	_ = mime.AddExtensionType(".webmanifest", "application/manifest+json")
+	_ = mime.AddExtensionType(".json", "application/json")
 }

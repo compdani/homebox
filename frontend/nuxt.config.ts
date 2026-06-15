@@ -30,22 +30,26 @@ export default defineNuxtConfig({
   },
   css: ["@/assets/css/main.css"],
   pwa: {
-    workbox: {
-      navigateFallbackDenylist: [/^\/api/],
-    },
+    registerType: "prompt",
     injectRegister: "script",
-    injectManifest: {
-      swSrc: "sw.js",
+    workbox: {
+      navigateFallback: "/index.html",
+      navigateFallbackDenylist: [/^\/api/],
+      globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,webmanifest}"],
     },
     devOptions: {
       // Enable to troubleshoot during development
       enabled: false,
     },
     manifest: {
+      id: "/",
       name: "Homebox",
       short_name: "Homebox",
       description: "Home Inventory App",
       theme_color: "#5b7f67",
+      background_color: "#FFFFFF",
+      display: "standalone",
+      scope: "/",
       start_url: "/home",
       icons: [
         {
@@ -62,7 +66,7 @@ export default defineNuxtConfig({
           src: "pwa-512x512.png",
           sizes: "512x512",
           type: "image/png",
-          purpose: "any maskable",
+          purpose: "maskable",
         },
       ],
     },
