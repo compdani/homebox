@@ -31,7 +31,8 @@ func ensureTimestamps(app core.App, names ...string) error {
 	for _, name := range names {
 		col, err := app.FindCollectionByNameOrId(name)
 		if err != nil {
-			return err
+			// Collection may not exist yet (added in a later migration).
+			continue
 		}
 		if collectionHasField(col, "created") {
 			continue

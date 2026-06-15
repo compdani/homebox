@@ -29,8 +29,7 @@ type Options struct {
 func New(opts Options, currencyList []currencies.Currency) *pocketbase.PocketBase {
 	dataDir := opts.Config.Storage.PocketBaseDataDir()
 	app := pocketbase.NewWithConfig(pocketbase.Config{
-		DefaultDataDir:  dataDir,
-		HideStartBanner: true,
+		DefaultDataDir: dataDir,
 	})
 
 	migrationsDir := filepath.Join(opts.Config.Storage.Data, "migrations")

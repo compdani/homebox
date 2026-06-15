@@ -44,4 +44,3 @@ EXPOSE 7745
 WORKDIR /pb
 
 ENTRYPOINT ["/pb/pocketbase"]
-CMD ["/data/config.yml"]

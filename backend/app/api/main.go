@@ -63,13 +63,12 @@ func run(cfg *config.Config) error {
 		MountSPA:  mountSPA,
 	}, currencyList)
 
-	args := []string{os.Args[0], "serve", "--http=" + cfg.Web.Host + ":" + cfg.Web.Port}
-	if len(os.Args) > 1 {
-		args = append(args, os.Args[1:]...)
+	httpAddr := cfg.Web.Host + ":" + cfg.Web.Port
+	if cfg.Web.Host == "" {
+		httpAddr = "0.0.0.0:" + cfg.Web.Port
 	}
-	os.Args = args
+	os.Args = []string{os.Args[0], "serve", "--http=" + httpAddr}
 
-	log.Info().Msgf("Server is running on %s:%s", cfg.Web.Host, cfg.Web.Port)
 	return app.Start()
 }
 

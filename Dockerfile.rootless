@@ -46,4 +46,3 @@ WORKDIR /pb
 
 USER nonroot
 ENTRYPOINT ["/pb/pocketbase"]
-CMD ["/data/config.yml"]

@@ -16,7 +16,6 @@ func upAddAutodateFields(app core.App) error {
 		collections.Groups,
 		collections.Locations,
 		collections.Labels,
-		collections.Products,
 		collections.Items,
 		collections.ItemFields,
 		collections.Attachments,
