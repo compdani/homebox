@@ -44,7 +44,6 @@ LABEL Name=homebox Version=0.0.1
 LABEL org.opencontainers.image.source="https://github.com/hay-kot/homebox"
 EXPOSE 7745
 WORKDIR /app
-VOLUME [ "/data" ]
 
 ENTRYPOINT [ "/app/api" ]
 CMD [ "/data/config.yml" ]
