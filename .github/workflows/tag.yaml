@@ -38,7 +38,7 @@ jobs:
         run: |
           pnpm install --shamefully-hoist
           pnpm run build
-          cp -r ./.output/public ../backend/app/api/static/
+          cp -r ./.output/public ../backend/pb_public
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v5

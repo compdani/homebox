@@ -1,49 +1,47 @@
 
-# Build Nuxt
-FROM node:20-alpine as frontend-builder
-WORKDIR  /app
+# Build Nuxt frontend
+FROM node:20-alpine AS frontend-builder
+WORKDIR /app
 RUN npm install -g pnpm
 COPY frontend/package.json frontend/pnpm-lock.yaml ./
 RUN pnpm install --frozen-lockfile --shamefully-hoist
 COPY frontend .
 RUN pnpm build
 
-# Build API
+# Build PocketBase binary
 FROM golang:1.25-alpine AS builder
 ARG BUILD_TIME
 ARG COMMIT
 ARG VERSION
-RUN apk update && \
-    apk upgrade && \
-    apk add --update git build-base gcc g++
+RUN apk add --no-cache git
 
-WORKDIR /go/src/app
-COPY ./backend .
-RUN go get -d -v ./...
-RUN rm -rf ./app/api/public
-COPY --from=frontend-builder /app/.output/public ./app/api/static/public
-RUN CGO_ENABLED=0 GOOS=linux go build \
-    -ldflags "-s -w -X main.commit=$COMMIT -X main.buildTime=$BUILD_TIME -X main.version=$VERSION"  \
-    -o /go/bin/api \
-    -v ./app/api/*.go
+WORKDIR /build
+COPY backend/go.mod backend/go.sum ./
+RUN go mod download
+COPY backend/ .
+COPY --from=frontend-builder /app/.output/public ./pb_public
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -ldflags "-s -w -X main.commit=$COMMIT -X main.buildTime=$BUILD_TIME -X main.version=$VERSION" \
+    -o pocketbase \
+    ./app/api/
 
-# Production Stage
+# Production
 FROM alpine:latest
 
 ENV HBOX_MODE=production
+ENV HBOX_WEB_HOST=0.0.0.0
 ENV HBOX_STORAGE_DATA=/data/
 ENV HBOX_STORAGE_POCKETBASE_DIR=/data/pb_data
 
-RUN apk --no-cache add ca-certificates
-RUN mkdir /app
-COPY --from=builder /go/bin/api /app
-
-RUN chmod +x /app/api
+RUN apk --no-cache add ca-certificates && mkdir -p /pb
+COPY --from=builder /build/pocketbase /pb/pocketbase
+COPY --from=builder /build/pb_public /pb/pb_public/
+RUN chmod +x /pb/pocketbase
 
 LABEL Name=homebox Version=0.0.1
-LABEL org.opencontainers.image.source="https://github.com/hay-kot/homebox"
+LABEL org.opencontainers.image.source="https://github.com/compdani/homebox"
 EXPOSE 7745
-WORKDIR /app
+WORKDIR /pb
 
-ENTRYPOINT [ "/app/api" ]
-CMD [ "/data/config.yml" ]
+ENTRYPOINT ["/pb/pocketbase"]
+CMD ["/data/config.yml"]

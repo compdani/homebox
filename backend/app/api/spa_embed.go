@@ -1,43 +1,64 @@
 package main
 
 import (
-	"embed"
 	"errors"
 	"io"
 	"mime"
-	"path"
+	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/tools/router"
 )
 
-//go:embed all:static/public/*
-var public embed.FS
-
 var errDir = errors.New("path is dir")
 
+func publicDir() string {
+	if dir := os.Getenv("HBOX_PUBLIC_DIR"); dir != "" {
+		return dir
+	}
+	return "pb_public"
+}
+
 func mountSPA(r *router.Router[*core.RequestEvent]) {
+	dir := publicDir()
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		return
+	}
+
 	registerSPAMimes()
 	r.GET("/{path...}", func(e *core.RequestEvent) error {
-		if tryServeSPA(e, e.Request.URL.Path) == nil {
+		requestedPath := e.Request.URL.Path
+		if tryServeSPAFromDisk(e, dir, requestedPath) == nil {
 			return nil
 		}
-		return tryServeSPA(e, "/index.html")
+		return tryServeSPAFromDisk(e, dir, "/index.html")
 	})
 }
 
-func tryServeSPA(e *core.RequestEvent, requestedPath string) error {
-	f, err := public.Open(path.Join("static/public", requestedPath))
+func tryServeSPAFromDisk(e *core.RequestEvent, dir, requestedPath string) error {
+	clean := filepath.Clean(requestedPath)
+	if strings.Contains(clean, "..") {
+		return os.ErrNotExist
+	}
+
+	full := filepath.Join(dir, filepath.FromSlash(strings.TrimPrefix(clean, "/")))
+	info, err := os.Stat(full)
+	if err != nil {
+		return err
+	}
+	if info.IsDir() {
+		return errDir
+	}
+
+	f, err := os.Open(full)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
-	stat, _ := f.Stat()
-	if stat.IsDir() {
-		return errDir
-	}
-	contentType := mime.TypeByExtension(filepath.Ext(requestedPath))
+
+	contentType := mime.TypeByExtension(filepath.Ext(full))
 	e.Response.Header().Set("Content-Type", contentType)
 	_, err = io.Copy(e.Response, f)
 	return err
