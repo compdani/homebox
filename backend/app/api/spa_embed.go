@@ -1,80 +1,62 @@
 package main
 
 import (
-	"errors"
-	"io"
-	"mime"
+	"log"
+	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 
+	"github.com/pocketbase/pocketbase/apis"
 	"github.com/pocketbase/pocketbase/core"
+	"github.com/pocketbase/pocketbase/tools/hook"
+	"github.com/pocketbase/pocketbase/tools/osutils"
 	"github.com/pocketbase/pocketbase/tools/router"
 )
-
-var errDir = errors.New("path is dir")
 
 func publicDir() string {
 	if dir := os.Getenv("HBOX_PUBLIC_DIR"); dir != "" {
 		return dir
 	}
-	return "pb_public"
+	if osutils.IsProbablyGoRun() {
+		return "pb_public"
+	}
+
+	exe, err := os.Executable()
+	if err != nil {
+		return "pb_public"
+	}
+	exe, err = filepath.EvalSymlinks(exe)
+	if err != nil {
+		exe, _ = os.Executable()
+	}
+	return filepath.Join(filepath.Dir(exe), "pb_public")
 }
 
 func mountSPA(r *router.Router[*core.RequestEvent]) {
 	dir := publicDir()
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
+	info, err := os.Stat(dir)
+	if err != nil {
+		log.Printf("homebox: SPA static dir unavailable (%s): %v", dir, err)
+		return
+	}
+	if !info.IsDir() {
+		log.Printf("homebox: SPA static path is not a directory: %s", dir)
 		return
 	}
 
-	registerSPAMimes()
-	serve := func(e *core.RequestEvent) error {
-		requestedPath := e.Request.URL.Path
-		if strings.HasPrefix(requestedPath, "/api/") || strings.HasPrefix(requestedPath, "/_") {
-			return os.ErrNotExist
-		}
-		if tryServeSPAFromDisk(e, dir, requestedPath) == nil {
-			return nil
-		}
-		return tryServeSPAFromDisk(e, dir, "/index.html")
+	if r.HasRoute(http.MethodGet, "/{path...}") {
+		return
 	}
-	// PocketBase auto-registers a JSON 404 for "/" unless HasRoute("", "/") is true.
-	// Use a method-agnostic "/" route (not GET /) so it doesn't conflict with GET /{path...}.
-	r.Route("", "/", serve)
-	r.GET("/{path...}", serve)
+
+	r.GET("/{path...}", apis.Static(os.DirFS(dir), true))
 }
 
-func tryServeSPAFromDisk(e *core.RequestEvent, dir, requestedPath string) error {
-	clean := filepath.Clean(requestedPath)
-	if strings.Contains(clean, "..") {
-		return os.ErrNotExist
-	}
-
-	full := filepath.Join(dir, filepath.FromSlash(strings.TrimPrefix(clean, "/")))
-	info, err := os.Stat(full)
-	if err != nil {
-		return err
-	}
-	if info.IsDir() {
-		return errDir
-	}
-
-	f, err := os.Open(full)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	contentType := mime.TypeByExtension(filepath.Ext(full))
-	e.Response.Header().Set("Content-Type", contentType)
-	_, err = io.Copy(e.Response, f)
-	return err
-}
-
-func registerSPAMimes() {
-	_ = mime.AddExtensionType(".html", "text/html; charset=utf-8")
-	_ = mime.AddExtensionType(".js", "application/javascript")
-	_ = mime.AddExtensionType(".mjs", "application/javascript")
-	_ = mime.AddExtensionType(".webmanifest", "application/manifest+json")
-	_ = mime.AddExtensionType(".json", "application/json")
+func registerSPA(app core.App) {
+	app.OnServe().Bind(&hook.Handler[*core.ServeEvent]{
+		Priority: 999,
+		Func: func(se *core.ServeEvent) error {
+			mountSPA(se.Router)
+			return se.Next()
+		},
+	})
 }

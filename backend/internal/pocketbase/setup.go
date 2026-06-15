@@ -11,7 +11,6 @@ import (
 	"github.com/pocketbase/pocketbase"
 	"github.com/pocketbase/pocketbase/core"
 	"github.com/pocketbase/pocketbase/plugins/migratecmd"
-	"github.com/pocketbase/pocketbase/tools/router"
 
 	_ "github.com/hay-kot/homebox/backend/internal/pocketbase/migrations"
 )
@@ -22,7 +21,6 @@ type Options struct {
 	Version   string
 	Commit    string
 	BuildTime string
-	MountSPA  func(*router.Router[*core.RequestEvent])
 }
 
 // New creates a configured PocketBase application.
@@ -47,7 +45,6 @@ func New(opts Options, currencyList []currencies.Currency) *pocketbase.PocketBas
 		Version:    opts.Version,
 		Commit:     opts.Commit,
 		BuildTime:  opts.BuildTime,
-		MountSPA:   opts.MountSPA,
 		Currencies: currencyList,
 	})
 

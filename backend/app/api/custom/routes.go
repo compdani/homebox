@@ -20,7 +20,6 @@ type Deps struct {
 	Version    string
 	Commit     string
 	BuildTime  string
-	MountSPA   func(*router.Router[*core.RequestEvent])
 	Currencies []currencies.Currency
 }
 
@@ -118,14 +117,7 @@ func Register(app core.App, deps Deps) {
 		registerReportRoutes(authed, deps)
 		registerNotifierRoutes(authed, deps)
 
-		if err := se.Next(); err != nil {
-			return err
-		}
-		// Register SPA fallback last so PocketBase /api routes (e.g. realtime SSE) take precedence.
-		if deps.MountSPA != nil {
-			deps.MountSPA(se.Router)
-		}
-		return nil
+		return se.Next()
 	})
 
 	app.OnBootstrap().BindFunc(func(e *core.BootstrapEvent) error {

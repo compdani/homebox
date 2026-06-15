@@ -60,8 +60,9 @@ func run(cfg *config.Config) error {
 		Version:   version,
 		Commit:    commit,
 		BuildTime: buildTime,
-		MountSPA:  mountSPA,
 	}, currencyList)
+
+	registerSPA(app)
 
 	httpAddr := cfg.Web.Host + ":" + cfg.Web.Port
 	if cfg.Web.Host == "" {

@@ -32,6 +32,7 @@ ENV HBOX_MODE=production
 ENV HBOX_WEB_HOST=0.0.0.0
 ENV HBOX_STORAGE_DATA=/data/
 ENV HBOX_STORAGE_POCKETBASE_DIR=/data/pb_data
+ENV HBOX_PUBLIC_DIR=/pb/pb_public
 
 RUN apk --no-cache add ca-certificates && mkdir -p /pb
 COPY --from=builder /build/pocketbase /pb/pocketbase
