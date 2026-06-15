@@ -9,7 +9,7 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      pbUrl: process.env.NUXT_PUBLIC_PB_URL || (process.env.NODE_ENV === "development" ? "http://localhost:7745" : ""),
+      pbUrl: process.env.NUXT_PUBLIC_PB_URL || (process.env.NODE_ENV === "development" ? "http://localhost:7745" : "/"),
     },
   },
   modules: [
@@ -20,6 +20,9 @@ export default defineNuxtConfig({
     "unplugin-icons/nuxt",
   ],
   nitro: {
+    prerender: {
+      routes: ["/"],
+    },
     devProxy: {
       "/api": {
         target: "http://localhost:7745/api",
@@ -33,9 +36,15 @@ export default defineNuxtConfig({
     registerType: "prompt",
     injectRegister: "script",
     workbox: {
-      navigateFallback: "/index.html",
+      navigateFallback: "/",
       navigateFallbackDenylist: [/^\/api/],
       globPatterns: ["**/*.{js,css,html,ico,png,svg,jpg,webmanifest}"],
+      runtimeCaching: [
+        {
+          urlPattern: ({ url }) => url.pathname.startsWith("/api/"),
+          handler: "NetworkOnly",
+        },
+      ],
     },
     devOptions: {
       // Enable to troubleshoot during development

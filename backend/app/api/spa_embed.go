@@ -30,6 +30,9 @@ func mountSPA(r *router.Router[*core.RequestEvent]) {
 	registerSPAMimes()
 	r.GET("/{path...}", func(e *core.RequestEvent) error {
 		requestedPath := e.Request.URL.Path
+		if strings.HasPrefix(requestedPath, "/api/") || strings.HasPrefix(requestedPath, "/_") {
+			return os.ErrNotExist
+		}
 		if tryServeSPAFromDisk(e, dir, requestedPath) == nil {
 			return nil
 		}

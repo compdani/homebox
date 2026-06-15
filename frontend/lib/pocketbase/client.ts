@@ -4,7 +4,8 @@ let client: PocketBase | null = null;
 
 export function getPb(): PocketBase {
   if (!client) {
-    client = new PocketBase("");
+    // Root-relative base so API calls stay at /api/... on nested routes (e.g. /locations).
+    client = new PocketBase("/");
   }
   return client;
 }
