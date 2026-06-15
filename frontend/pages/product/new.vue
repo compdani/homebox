@@ -11,6 +11,7 @@
 
   const api = useUserApi();
   const toast = useNotifier();
+  const productStore = useProductStore();
   const loading = ref(false);
 
   const form = reactive<ProductCreate>({
@@ -33,6 +34,7 @@
       return;
     }
     toast.success("Product created");
+    await productStore.refresh();
     navigateTo(`/product/${data.id}`);
   }
 </script>

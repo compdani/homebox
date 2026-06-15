@@ -30,12 +30,6 @@
   const props = defineProps<Props>();
   const value = useVModel(props, "modelValue");
 
-  const api = useUserApi();
-  const { data: products } = useAsyncData("product-selector", async () => {
-    const { data, error } = await api.products.getAll();
-    if (error) {
-      return [];
-    }
-    return data;
-  });
+  const productStore = useProductStore();
+  const products = computed(() => productStore.products);
 </script>

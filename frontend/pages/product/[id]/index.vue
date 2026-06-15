@@ -12,6 +12,7 @@
   const route = useRoute();
   const api = useUserApi();
   const toast = useNotifier();
+  const productStore = useProductStore();
   const productId = computed(() => route.params.id as string);
 
   const { data: product } = useAsyncData(productId.value, async () => {
@@ -37,6 +38,7 @@
       return;
     }
     toast.success("Product deleted");
+    await productStore.refresh();
     navigateTo("/products");
   }
 

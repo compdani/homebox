@@ -40,6 +40,7 @@
 
   const api = useUserApi();
   const toast = useNotifier();
+  const productStore = useProductStore();
 
   async function create() {
     if (!form.name.trim()) {
@@ -54,6 +55,7 @@
       return;
     }
     toast.success("Product created");
+    await productStore.refresh();
     form.name = "";
     form.description = "";
     form.manufacturer = "";

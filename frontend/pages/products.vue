@@ -12,14 +12,9 @@
 
   const api = useUserApi();
   const query = ref("");
+  const productStore = useProductStore();
 
-  const { data: products } = useAsyncData("products-list", async () => {
-    const { data, error } = await api.products.getAll();
-    if (error) {
-      return [] as ProductOut[];
-    }
-    return data;
-  });
+  const products = computed(() => productStore.products);
 
   const filtered = computed(() => {
     const list = products.value || [];
