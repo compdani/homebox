@@ -72,6 +72,7 @@ export interface ItemCreate {
    */
   name: string;
   parentId?: string | null;
+  quantity?: number;
 }
 
 export interface ItemField {
@@ -105,6 +106,7 @@ export interface ItemOut {
   /** Extras */
   notes: string;
   parent?: ItemSummary | null;
+  product?: ProductSummary | null;
   purchaseFrom: string;
   /** @example "0" */
   purchasePrice: string;
@@ -145,6 +147,7 @@ export interface ItemSummary {
   /** Edges */
   location?: LocationSummary | null;
   name: string;
+  product?: ProductSummary | null;
   /** @example "0" */
   purchasePrice: string;
   quantity: number;
@@ -217,6 +220,68 @@ export interface LabelSummary {
   id: string;
   name: string;
   updatedAt: Date | string;
+}
+
+export interface PlaceItemRequest {
+  productId?: string;
+  itemId?: string;
+  locationId: string;
+  quantity: number;
+}
+
+export interface PlaceItemResult {
+  id: string;
+  quantity: number;
+  created: boolean;
+}
+
+export interface UnplaceItemRequest {
+  productId: string;
+  locationId: string;
+  quantity: number;
+}
+
+export interface UnplaceItemResult {
+  id: string;
+  quantity: number;
+  removed: boolean;
+}
+
+export interface ProductCreate {
+  /** @maxLength 1000 */
+  description?: string;
+  manufacturer?: string;
+  modelNumber?: string;
+  /**
+   * @minLength 1
+   * @maxLength 255
+   */
+  name: string;
+}
+
+export interface ProductOut {
+  createdAt: Date | string;
+  description: string;
+  id: string;
+  manufacturer: string;
+  modelNumber: string;
+  name: string;
+  updatedAt: Date | string;
+}
+
+export interface ProductSummary {
+  id: string;
+  manufacturer: string;
+  modelNumber: string;
+  name: string;
+}
+
+export interface ProductUpdate {
+  description: string;
+  id: string;
+  manufacturer: string;
+  modelNumber: string;
+  name: string;
 }
 
 export interface LocationCreate {

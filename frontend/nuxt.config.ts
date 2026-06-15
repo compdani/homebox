@@ -3,12 +3,20 @@ import { defineNuxtConfig } from "nuxt/config";
 // https://v3.nuxtjs.org/api/configuration/nuxt.config
 export default defineNuxtConfig({
   ssr: false,
+  vite: {
+    // Nuxt's dev warmup can fail on project paths with spaces (e.g. "Go Projects").
+    warmupEntry: false,
+  },
+  runtimeConfig: {
+    public: {
+      pbUrl: process.env.NUXT_PUBLIC_PB_URL || (process.env.NODE_ENV === "development" ? "http://localhost:7745" : ""),
+    },
+  },
   modules: [
     "@nuxtjs/tailwindcss",
     "@pinia/nuxt",
     "@vueuse/nuxt",
     "@vite-pwa/nuxt",
-    "./nuxt.proxyoverride.ts",
     "unplugin-icons/nuxt",
   ],
   nitro: {

@@ -13,12 +13,12 @@
   const props = withDefaults(defineProps<Props>(), {});
 
   const link = computed(() => {
-    return props.item.type === "location" ? `/location/${props.item.id}` : `/item/${props.item.id}`;
+    return (props.item.type ?? "location") === "location" ? `/location/${props.item.id}` : `/item/${props.item.id}`;
   });
 
-  const hasChildren = computed(() => {
-    return props.item.children.length > 0;
-  });
+  const children = computed(() => props.item.children ?? []);
+
+  const hasChildren = computed(() => children.value.length > 0);
 
   const state = useTreeState(props.treeId);
 
@@ -64,12 +64,12 @@
           <MdiChevronDown name="mdi-chevron-down" class="h-6 w-6 swap-on" />
         </label>
       </div>
-      <MdiMapMarker v-if="item.type === 'location'" class="h-4 w-4" />
+      <MdiMapMarker v-if="(item.type ?? 'location') === 'location'" class="h-4 w-4" />
       <MdiPackageVariant v-else class="h-4 w-4" />
       <NuxtLink class="hover:link text-lg" :to="link" @click.stop>{{ item.name }} </NuxtLink>
     </div>
     <div v-if="openRef" class="ml-4">
-      <LocationTreeNode v-for="child in item.children" :key="child.id" :item="child" :tree-id="treeId" />
+      <LocationTreeNode v-for="child in children" :key="child.id" :item="child" :tree-id="treeId" />
     </div>
   </div>
 </template>

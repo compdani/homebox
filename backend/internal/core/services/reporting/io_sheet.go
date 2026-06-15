@@ -1,16 +1,12 @@
 package reporting
 
 import (
-	"context"
 	"fmt"
 	"io"
 	"reflect"
-	"sort"
 	"strconv"
 	"strings"
 
-	"github.com/google/uuid"
-	"github.com/hay-kot/homebox/backend/internal/data/repo"
 	"github.com/hay-kot/homebox/backend/internal/data/types"
 	"github.com/rs/zerolog/log"
 )
@@ -110,8 +106,8 @@ func (s *IOSheet) Read(data io.Reader) error {
 			// Custom Types
 			case reflect.TypeOf(types.Date{}):
 				v = types.DateFromString(val)
-			case reflect.TypeOf(repo.AssetID(0)):
-				v, _ = repo.ParseAssetID(val)
+			case reflect.TypeOf(AssetID(0)):
+				v, _ = ParseAssetID(val)
 			case reflect.TypeOf(LocationString{}):
 				v = parseLocationString(val)
 			case reflect.TypeOf(LabelString{}):
@@ -147,106 +143,6 @@ func (s *IOSheet) Read(data io.Reader) error {
 		}
 
 		s.Rows[i] = rowData
-	}
-
-	return nil
-}
-
-// ReadItems writes the sheet to a writer.
-func (s *IOSheet) ReadItems(ctx context.Context, items []repo.ItemOut, GID uuid.UUID, repos *repo.AllRepos) error {
-	s.Rows = make([]ExportTSVRow, len(items))
-
-	extraHeaders := map[string]struct{}{}
-
-	for i := range items {
-		item := items[i]
-
-		// TODO: Support fetching nested locations
-		locID := item.Location.ID
-
-		locPaths, err := repos.Locations.PathForLoc(context.Background(), GID, locID)
-		if err != nil {
-			log.Error().Err(err).Msg("could not get location path")
-			return err
-		}
-
-		locString := fromPathSlice(locPaths)
-
-		labelString := make([]string, len(item.Labels))
-
-		for i, l := range item.Labels {
-			labelString[i] = l.Name
-		}
-
-		customFields := make([]ExportItemFields, len(item.Fields))
-
-		for i, f := range item.Fields {
-			extraHeaders[f.Name] = struct{}{}
-
-			customFields[i] = ExportItemFields{
-				Name:  f.Name,
-				Value: f.TextValue,
-			}
-		}
-
-		s.Rows[i] = ExportTSVRow{
-			// fill struct
-			Location: locString,
-			LabelStr: labelString,
-
-			ImportRef:   item.ImportRef,
-			AssetID:     item.AssetID,
-			Name:        item.Name,
-			Quantity:    item.Quantity,
-			Description: item.Description,
-			Insured:     item.Insured,
-			Archived:    item.Archived,
-
-			PurchasePrice: item.PurchasePrice,
-			PurchaseFrom:  item.PurchaseFrom,
-			PurchaseTime:  item.PurchaseTime,
-
-			Manufacturer: item.Manufacturer,
-			ModelNumber:  item.ModelNumber,
-			SerialNumber: item.SerialNumber,
-
-			LifetimeWarranty: item.LifetimeWarranty,
-			WarrantyExpires:  item.WarrantyExpires,
-			WarrantyDetails:  item.WarrantyDetails,
-
-			SoldTo:    item.SoldTo,
-			SoldTime:  item.SoldTime,
-			SoldPrice: item.SoldPrice,
-			SoldNotes: item.SoldNotes,
-
-			Fields: customFields,
-		}
-	}
-
-	// Extract and sort additional headers for deterministic output
-	customHeaders := make([]string, 0, len(extraHeaders))
-
-	for k := range extraHeaders {
-		customHeaders = append(customHeaders, k)
-	}
-
-	sort.Strings(customHeaders)
-
-	st := reflect.TypeOf(ExportTSVRow{})
-
-	// Write headers
-	for i := 0; i < st.NumField(); i++ {
-		field := st.Field(i)
-		tag := field.Tag.Get("csv")
-		if tag == "" || tag == "-" {
-			continue
-		}
-
-		s.headers = append(s.headers, tag)
-	}
-
-	for _, h := range customHeaders {
-		s.headers = append(s.headers, "HB.field."+h)
 	}
 
 	return nil
@@ -295,8 +191,8 @@ func (s *IOSheet) TSV() ([][]string, error) {
 			// Custom Types
 			case reflect.TypeOf(types.Date{}):
 				v = val.Interface().(types.Date).String()
-			case reflect.TypeOf(repo.AssetID(0)):
-				v = val.Interface().(repo.AssetID).String()
+			case reflect.TypeOf(AssetID(0)):
+				v = val.Interface().(AssetID).String()
 			case reflect.TypeOf(LocationString{}):
 				v = val.Interface().(LocationString).String()
 			case reflect.TypeOf(LabelString{}):

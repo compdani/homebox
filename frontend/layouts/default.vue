@@ -7,6 +7,7 @@
    -->
     <ModalConfirm />
     <ItemCreateModal v-model="modals.item" />
+    <ProductCreateModal v-model="modals.product" />
     <LabelCreateModal v-model="modals.label" />
     <LocationCreateModal v-model="modals.location" />
     <AppToast />
@@ -98,6 +99,8 @@
 
   import MdiHome from "~icons/mdi/home";
   import MdiFileTree from "~icons/mdi/file-tree";
+  import MdiBarcode from "~icons/mdi/barcode";
+  import MdiQrcodeScan from "~icons/mdi/qrcode-scan";
   import MdiMagnify from "~icons/mdi/magnify";
   import MdiAccount from "~icons/mdi/account";
   import MdiCog from "~icons/mdi/cog";
@@ -109,6 +112,7 @@
 
   const modals = reactive({
     item: false,
+    product: false,
     location: false,
     label: false,
     import: false,
@@ -116,9 +120,15 @@
 
   const dropdown = [
     {
-      name: "Item / Asset",
+      name: "Product to Location",
       action: () => {
         modals.item = true;
+      },
+    },
+    {
+      name: "Product",
+      action: () => {
+        modals.product = true;
       },
     },
     {
@@ -158,6 +168,20 @@
       active: computed(() => route.path === "/locations"),
       name: "Locations",
       to: "/locations",
+    },
+    {
+      icon: MdiBarcode,
+      id: 5,
+      active: computed(() => route.path.startsWith("/product")),
+      name: "Products",
+      to: "/products",
+    },
+    {
+      icon: MdiQrcodeScan,
+      id: 7,
+      active: computed(() => route.path === "/scan"),
+      name: "Scan",
+      to: "/scan",
     },
     {
       icon: MdiMagnify,

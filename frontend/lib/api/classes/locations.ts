@@ -1,5 +1,10 @@
-import { BaseAPI, route } from "../base";
-import type { LocationOutCount, LocationCreate, LocationOut, LocationUpdate, TreeItem } from "../types/data-contracts";
+import { route } from "../base";
+import { Requests } from "~~/lib/requests";
+import { COLLECTIONS, authGroupId, getPb } from "~~/lib/pocketbase/client";
+import { mapLocation } from "~~/lib/pocketbase/mappers";
+import { wrap } from "~~/lib/pocketbase/response";
+import type { LocationCreate, LocationOut, LocationOutCount, LocationUpdate } from "../types/data-contracts";
+import type { TreeItem } from "../types/data-contracts";
 
 export type LocationsQuery = {
   filterChildren: boolean;
@@ -9,28 +14,71 @@ export type TreeQuery = {
   withItems: boolean;
 };
 
-export class LocationsApi extends BaseAPI {
+export class LocationsApi {
+  constructor(private http: Requests) {}
+
   getAll(q: LocationsQuery = { filterChildren: false }) {
-    return this.http.get<LocationOutCount[]>({ url: route("/locations", q) });
+    return wrap(async () => {
+      const records = await getPb().collection(COLLECTIONS.locations).getFullList({ sort: "name" });
+      const filtered = q.filterChildren ? records.filter(r => !r.parent) : records;
+      return filtered.map(
+        (r): LocationOutCount => ({
+          id: r.id,
+          name: r.name,
+          description: r.description || "",
+          itemCount: 0,
+          createdAt: r.created,
+          updatedAt: r.updated,
+        })
+      );
+    });
   }
 
-  getTree(tq = { withItems: false }) {
-    return this.http.get<TreeItem[]>({ url: route("/locations/tree", tq) });
+  getTree(_tq = { withItems: false }) {
+    return this.http.get<TreeItem[]>({ url: route("/locations/tree") });
   }
 
   create(body: LocationCreate) {
-    return this.http.post<LocationCreate, LocationOut>({ url: route("/locations"), body });
+    return wrap(async () => {
+      const rec = await getPb()
+        .collection(COLLECTIONS.locations)
+        .create({
+          name: body.name,
+          description: body.description,
+          parent: body.parentId || "",
+          group: authGroupId(),
+        });
+      return mapLocation(rec);
+    });
   }
 
   get(id: string) {
-    return this.http.get<LocationOut>({ url: route(`/locations/${id}`) });
+    return wrap(async () => {
+      const rec = await getPb().collection(COLLECTIONS.locations).getOne(id, { expand: "parent" });
+      return mapLocation(rec);
+    });
   }
 
   delete(id: string) {
-    return this.http.delete<void>({ url: route(`/locations/${id}`) });
+    return wrap(async () => {
+      await getPb().collection(COLLECTIONS.locations).delete(id);
+    });
+  }
+
+  labelURL(id: string) {
+    return `/api/v1/locations/${id}/label.png`;
   }
 
   update(id: string, body: LocationUpdate) {
-    return this.http.put<LocationUpdate, LocationOut>({ url: route(`/locations/${id}`), body });
+    return wrap(async () => {
+      const rec = await getPb()
+        .collection(COLLECTIONS.locations)
+        .update(id, {
+          name: body.name,
+          description: body.description,
+          parent: body.parentId || "",
+        });
+      return mapLocation(rec);
+    });
   }
 }

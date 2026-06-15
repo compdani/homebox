@@ -1,24 +1,47 @@
-import { BaseAPI, route } from "../base";
+import { route } from "../base";
+import { Requests } from "~~/lib/requests";
+import { COLLECTIONS, authGroupId, getPb } from "~~/lib/pocketbase/client";
+import { mapLabel } from "~~/lib/pocketbase/mappers";
+import { wrap } from "~~/lib/pocketbase/response";
 import type { LabelCreate, LabelOut } from "../types/data-contracts";
 
-export class LabelsApi extends BaseAPI {
+export class LabelsApi {
+  constructor(private http: Requests) {}
+
   getAll() {
-    return this.http.get<LabelOut[]>({ url: route("/labels") });
+    return wrap(async () => {
+      const result = await getPb().collection(COLLECTIONS.labels).getFullList({ sort: "name" });
+      return result.map(mapLabel) as LabelOut[];
+    });
   }
 
   create(body: LabelCreate) {
-    return this.http.post<LabelCreate, LabelOut>({ url: route("/labels"), body });
+    return wrap(async () => {
+      const rec = await getPb().collection(COLLECTIONS.labels).create({
+        ...body,
+        group: authGroupId(),
+      });
+      return mapLabel(rec);
+    });
   }
 
   get(id: string) {
-    return this.http.get<LabelOut>({ url: route(`/labels/${id}`) });
+    return wrap(async () => {
+      const rec = await getPb().collection(COLLECTIONS.labels).getOne(id);
+      return mapLabel(rec);
+    });
   }
 
   delete(id: string) {
-    return this.http.delete<void>({ url: route(`/labels/${id}`) });
+    return wrap(async () => {
+      await getPb().collection(COLLECTIONS.labels).delete(id);
+    });
   }
 
   update(id: string, body: LabelCreate) {
-    return this.http.put<LabelCreate, LabelOut>({ url: route(`/labels/${id}`), body });
+    return wrap(async () => {
+      const rec = await getPb().collection(COLLECTIONS.labels).update(id, body);
+      return mapLabel(rec);
+    });
   }
 }

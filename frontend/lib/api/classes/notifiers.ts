@@ -1,28 +1,55 @@
-import { BaseAPI, route } from "../base";
+import { route } from "../base";
+import { Requests } from "~~/lib/requests";
+import { COLLECTIONS, authGroupId, getPb } from "~~/lib/pocketbase/client";
+import { mapNotifier } from "~~/lib/pocketbase/mappers";
+import { wrap } from "~~/lib/pocketbase/response";
 import type { NotifierCreate, NotifierOut, NotifierUpdate } from "../types/data-contracts";
 
-export class NotifiersAPI extends BaseAPI {
+export class NotifiersAPI {
+  constructor(private http: Requests) {}
+
   getAll() {
-    return this.http.get<NotifierOut[]>({ url: route("/notifiers") });
+    return wrap(async () => {
+      const records = await getPb().collection(COLLECTIONS.notifiers).getFullList({ sort: "name" });
+      return records.map(mapNotifier) as NotifierOut[];
+    });
   }
 
   create(body: NotifierCreate) {
-    return this.http.post<NotifierCreate, NotifierOut>({ url: route("/notifiers"), body });
+    return wrap(async () => {
+      const rec = await getPb()
+        .collection(COLLECTIONS.notifiers)
+        .create({
+          name: body.name,
+          url: body.url,
+          is_active: body.isActive ?? true,
+          group: authGroupId(),
+          user: getPb().authStore.model?.id,
+        });
+      return mapNotifier(rec);
+    });
   }
 
   update(id: string, body: NotifierUpdate) {
-    if (body.url === "") {
-      body.url = null;
-    }
-
-    return this.http.put<NotifierUpdate, NotifierOut>({ url: route(`/notifiers/${id}`), body });
+    return wrap(async () => {
+      const rec = await getPb()
+        .collection(COLLECTIONS.notifiers)
+        .update(id, {
+          name: body.name,
+          url: body.url === "" ? null : body.url,
+          is_active: body.isActive,
+        });
+      return mapNotifier(rec);
+    });
   }
 
   delete(id: string) {
-    return this.http.delete<void>({ url: route(`/notifiers/${id}`) });
+    return wrap(async () => {
+      await getPb().collection(COLLECTIONS.notifiers).delete(id);
+    });
   }
 
-  test(url: string) {
-    return this.http.post<{ url: string }, null>({ url: route(`/notifiers/test`), body: { url } });
+  test(id: string) {
+    return this.http.post<{ id: string }, null>({ url: route(`/notifiers/test`), body: { id } });
   }
 }

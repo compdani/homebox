@@ -38,10 +38,9 @@
     },
   });
 
-  const api = useUserApi();
-
   function attachmentURL(attachmentId: string) {
-    return api.authURL(`/items/${props.itemId}/attachments/${attachmentId}`);
+    const att = props.attachments.find(a => a.id === attachmentId);
+    return att?.document.path || "";
   }
 </script>
 

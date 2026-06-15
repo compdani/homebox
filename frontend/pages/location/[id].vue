@@ -1,9 +1,11 @@
 <script setup lang="ts">
   import type { LocationSummary, LocationUpdate } from "~~/lib/api/types/data-contracts";
   import { useLocationStore } from "~~/stores/locations";
+  import { downloadAuthedFile } from "~~/lib/api/download";
   import MdiPackageVariant from "~icons/mdi/package-variant";
   import MdiPencil from "~icons/mdi/pencil";
   import MdiDelete from "~icons/mdi/delete";
+  import MdiDownload from "~icons/mdi/download";
 
   definePageMeta({
     middleware: ["auth"],
@@ -87,6 +89,15 @@
 
   const parent = ref<LocationSummary | any>({});
 
+  const qrData = computed(() => (location.value ? `${window.location.origin}/location/${location.value.id}` : ""));
+
+  async function downloadLabel() {
+    const ok = await downloadAuthedFile(api.locations.labelURL(locationId.value), "label.png");
+    if (!ok) {
+      toast.error("Failed to download label");
+    }
+  }
+
   const items = computedAsync(async () => {
     if (!location.value) {
       return [];
@@ -96,8 +107,7 @@
       locations: [location.value.id],
     });
 
-    if (resp.error) {
-      toast.error("Failed to load items");
+    if (resp.error || !resp.data) {
       return [];
     }
 
@@ -150,7 +160,11 @@
             </div>
             <div class="ml-auto mt-2 flex flex-wrap items-center justify-between gap-3">
               <div class="btn-group">
-                <PageQRCode class="dropdown-left" />
+                <PageQRCode class="dropdown-left" :data="qrData" />
+                <BaseButton size="sm" @click="downloadLabel">
+                  <MdiDownload class="mr-1" />
+                  Label
+                </BaseButton>
                 <BaseButton size="sm" @click="openUpdate">
                   <MdiPencil class="mr-1" name="mdi-pencil" />
                   Edit

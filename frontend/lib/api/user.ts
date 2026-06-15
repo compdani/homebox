@@ -1,7 +1,7 @@
-import { BaseAPI } from "./base";
-import { ItemsApi } from "./classes/items";
 import { LabelsApi } from "./classes/labels";
 import { LocationsApi } from "./classes/locations";
+import { ProductsApi } from "./classes/products";
+import { ItemsApi } from "./classes/items";
 import { GroupApi } from "./classes/group";
 import { UserApi } from "./classes/users";
 import { ActionsAPI } from "./classes/actions";
@@ -11,9 +11,10 @@ import { ReportsAPI } from "./classes/reports";
 import { NotifiersAPI } from "./classes/notifiers";
 import type { Requests } from "~~/lib/requests";
 
-export class UserClient extends BaseAPI {
+export class UserClient {
   locations: LocationsApi;
   labels: LabelsApi;
+  products: ProductsApi;
   items: ItemsApi;
   group: GroupApi;
   user: UserApi;
@@ -24,10 +25,9 @@ export class UserClient extends BaseAPI {
   notifiers: NotifiersAPI;
 
   constructor(requests: Requests, attachmentToken: string) {
-    super(requests, attachmentToken);
-
     this.locations = new LocationsApi(requests);
     this.labels = new LabelsApi(requests);
+    this.products = new ProductsApi(requests);
     this.items = new ItemsApi(requests, attachmentToken);
     this.group = new GroupApi(requests);
     this.user = new UserApi(requests);

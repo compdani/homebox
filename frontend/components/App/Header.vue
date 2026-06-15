@@ -31,15 +31,22 @@
 
   const modals = reactive({
     item: false,
+    product: false,
     location: false,
     label: false,
   });
 
   const dropdown = [
     {
-      name: "Item / Asset",
+      name: "Product to Location",
       action: () => {
         modals.item = true;
+      },
+    },
+    {
+      name: "Product",
+      action: () => {
+        modals.product = true;
       },
     },
     {
@@ -65,6 +72,7 @@
    -->
   <ModalConfirm />
   <ItemCreateModal v-model="modals.item" />
+  <ProductCreateModal v-model="modals.product" />
   <LabelCreateModal v-model="modals.label" />
   <LocationCreateModal v-model="modals.location" />
 

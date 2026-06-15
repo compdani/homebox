@@ -7,7 +7,7 @@
     </slot>
     <div tabindex="0" class="card compact dropdown-content shadow-lg bg-base-100 rounded-box w-64">
       <div class="card-body">
-        <h2 class="text-center">Page URL</h2>
+        <h2 class="text-center">Scan URL</h2>
         <img :src="getQRCodeUrl()" />
       </div>
     </div>
@@ -18,11 +18,12 @@
   import { route } from "../../lib/api/base";
   import MdiQrcode from "~icons/mdi/qrcode";
 
-  function getQRCodeUrl(): string {
-    const currentURL = window.location.href;
+  const props = defineProps<{
+    data?: string;
+  }>();
 
-    return route(`/qrcode`, { data: encodeURIComponent(currentURL) });
+  function getQRCodeUrl(): string {
+    const payload = props.data || window.location.href;
+    return route(`/qrcode`, { data: encodeURIComponent(payload) });
   }
 </script>
-
-<style lang="scss" scoped></style>

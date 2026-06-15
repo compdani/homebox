@@ -1,10 +1,10 @@
 package mid
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/hay-kot/homebox/backend/internal/data/ent"
 	"github.com/hay-kot/homebox/backend/internal/sys/validate"
 	"github.com/hay-kot/httpkit/errchain"
 	"github.com/hay-kot/httpkit/server"
@@ -60,9 +60,8 @@ func Errors(log zerolog.Logger) errchain.ErrorHandler {
 					} else {
 						code = requestError.Status
 					}
-				case ent.IsNotFound(err):
-					resp.Error = "Not Found"
-					code = http.StatusNotFound
+				case errors.Is(err, http.ErrAbortHandler):
+					return
 				default:
 					resp.Error = "Unknown Error"
 					code = http.StatusInternalServerError

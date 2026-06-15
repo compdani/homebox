@@ -65,7 +65,7 @@ volumes:
 | HBOX_WEB_WRITE_TIMEOUT               | 10                     | Write timeout of HTTP server                                                       |
 | HBOX_WEB_IDLE_TIMEOUT                | 30                     | Idle timeout of HTTP server                                                        |
 | HBOX_STORAGE_DATA                    | /data/                 | path to the data directory, do not change this if you're using docker              |
-| HBOX_STORAGE_SQLITE_URL              | /data/homebox.db?_fk=1 | sqlite database url, if you're using docker do not change this                     |
+| HBOX_STORAGE_POCKETBASE_DIR          | /data/pb_data          | PocketBase data directory (embedded database and files)                              |
 | HBOX_LOG_LEVEL                       | info                   | log level to use, can be one of: trace, debug, info, warn, error, critical         |
 | HBOX_LOG_FORMAT                      | text                   | log format to use, can be one of: text, json                                       |
 | HBOX_MAILER_HOST                     |                        | email host to use, if not set no email provider will be used                       |
@@ -88,7 +88,7 @@ volumes:
         --web-host/$HBOX_WEB_HOST                                                <string>
         --web-max-upload-size/$HBOX_WEB_MAX_UPLOAD_SIZE                          <int>     (default: 10)
         --storage-data/$HBOX_STORAGE_DATA                                        <string>  (default: ./.data)
-        --storage-sqlite-url/$HBOX_STORAGE_SQLITE_URL                            <string>  (default: ./.data/homebox.db?_fk=1)
+        --storage-pocketbase-dir/$HBOX_STORAGE_POCKETBASE_DIR                    <string>  (default: ./.data/pb_data)
         --log-level/$HBOX_LOG_LEVEL                                              <string>  (default: info)
         --log-format/$HBOX_LOG_FORMAT                                            <string>  (default: text)
         --mailer-host/$HBOX_MAILER_HOST                                          <string>

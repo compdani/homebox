@@ -1,27 +1,53 @@
-import { BaseAPI, route } from "../base";
+import { Requests } from "~~/lib/requests";
+import { getPb } from "~~/lib/pocketbase/client";
+import { mapUser } from "~~/lib/pocketbase/mappers";
+import { wrap, ok } from "~~/lib/pocketbase/response";
 import type { ChangePassword, UserOut } from "../types/data-contracts";
 import type { Result } from "../types/non-generated";
 
-export class UserApi extends BaseAPI {
+export class UserApi {
+  constructor(private http: Requests) {}
+
   public self() {
-    return this.http.get<Result<UserOut>>({ url: route("/users/self") });
+    return wrap(async () => {
+      const model = getPb().authStore.model;
+      if (!model) {
+        throw new Error("unauthorized");
+      }
+      const rec = await getPb().collection("users").getOne(model.id, { expand: "group" });
+      return { item: mapUser(rec) } as Result<UserOut>;
+    });
   }
 
   public logout() {
-    return this.http.post<object, void>({ url: route("/users/logout") });
+    getPb().authStore.clear();
+    return Promise.resolve(ok<void>(undefined as void));
   }
 
   public delete() {
-    return this.http.delete<void>({ url: route("/users/self") });
+    return wrap(async () => {
+      const id = getPb().authStore.model?.id;
+      if (!id) {
+        throw new Error("unauthorized");
+      }
+      await getPb().collection("users").delete(id);
+      getPb().authStore.clear();
+    });
   }
 
   public changePassword(current: string, newPassword: string) {
-    return this.http.put<ChangePassword, void>({
-      url: route("/users/self/change-password"),
-      body: {
-        current,
-        new: newPassword,
-      },
+    return wrap(async () => {
+      const id = getPb().authStore.model?.id;
+      if (!id) {
+        throw new Error("unauthorized");
+      }
+      await getPb()
+        .collection("users")
+        .update(id, {
+          oldPassword: current,
+          password: newPassword,
+          passwordConfirm: newPassword,
+        });
     });
   }
 }

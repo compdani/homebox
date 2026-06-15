@@ -16,7 +16,7 @@ describe("first time user workflow (register, login, join group)", () => {
 
   test("user should be able to register", async () => {
     const { response } = await api.register(userData);
-    expect(response.status).toBe(204);
+    expect(response.status).toBe(200);
   });
 
   test("user should be able to login", async () => {
@@ -28,7 +28,7 @@ describe("first time user workflow (register, login, join group)", () => {
     const userApi = factories.client.user(data.token);
     {
       const { response } = await userApi.user.delete();
-      expect(response.status).toBe(204);
+      expect(response.status).toBe(200);
     }
   });
 });

@@ -1,6 +1,7 @@
 import { PublicApi } from "~~/lib/api/public";
 import { UserClient } from "~~/lib/api/user";
 import { Requests } from "~~/lib/requests";
+import { getPb } from "~~/lib/pocketbase/client";
 
 export type Observer = {
   handler: (r: Response, req?: RequestInit) => void;
@@ -12,7 +13,6 @@ const observers: Record<string, Observer> = {};
 
 export function defineObserver(key: string, observer: Observer): RemoveObserver {
   observers[key] = observer;
-
   return () => {
     delete observers[key];
   };
@@ -29,12 +29,10 @@ export function usePublicApi(): PublicApi {
 
 export function useUserApi(): UserClient {
   const authCtx = useAuthContext();
-
-  const requests = new Requests("", "", {});
+  const requests = new Requests("", () => getPb().authStore.token || "", {});
   requests.addResponseInterceptor(logger);
   requests.addResponseInterceptor(r => {
     if (r.status === 401) {
-      console.error("unauthorized request, invalidating session");
       authCtx.invalidateSession();
     }
   });

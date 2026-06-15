@@ -37,14 +37,12 @@
   import type { ItemOut, ItemSummary } from "~~/lib/api/types/data-contracts";
   import MdiShieldCheck from "~icons/mdi/shield-check";
 
-  const api = useUserApi();
-
   const imageUrl = computed(() => {
     if (!props.item.imageId) {
       return "/no-image.jpg";
     }
-
-    return api.authURL(`/items/${props.item.id}/attachments/${props.item.imageId}`);
+    const att = "attachments" in props.item ? props.item.attachments?.find(a => a.id === props.item.imageId) : null;
+    return att?.document.path || "/no-image.jpg";
   });
 
   const top3 = computed(() => {

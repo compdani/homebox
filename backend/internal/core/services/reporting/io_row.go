@@ -3,7 +3,6 @@ package reporting
 import (
 	"strings"
 
-	"github.com/hay-kot/homebox/backend/internal/data/repo"
 	"github.com/hay-kot/homebox/backend/internal/data/types"
 )
 
@@ -16,10 +15,11 @@ type ExportTSVRow struct {
 	ImportRef string         `csv:"HB.import_ref"`
 	Location  LocationString `csv:"HB.location"`
 	LabelStr  LabelString    `csv:"HB.labels"`
-	AssetID   repo.AssetID   `csv:"HB.asset_id"`
+	AssetID   AssetID        `csv:"HB.asset_id"`
 	Archived  bool           `csv:"HB.archived"`
 
 	Name        string `csv:"HB.name"`
+	Product     string `csv:"HB.product"`
 	Quantity    int    `csv:"HB.quantity"`
 	Description string `csv:"HB.description"`
 	Insured     bool   `csv:"HB.insured"`
@@ -82,14 +82,4 @@ func parseLocationString(s string) LocationString {
 
 func (csf LocationString) String() string {
 	return strings.Join(csf, " / ")
-}
-
-func fromPathSlice(s []repo.ItemPath) LocationString {
-	v := make(LocationString, len(s))
-
-	for i := range s {
-		v[i] = s[i].Name
-	}
-
-	return v
 }

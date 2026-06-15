@@ -1,3 +1,5 @@
+import { COLLECTIONS, getPb } from "~~/lib/pocketbase/client";
+
 export enum ServerEvent {
   LocationMutation = "location.mutation",
   ItemMutation = "item.mutation",
@@ -8,57 +10,45 @@ export type EventMessage = {
   event: ServerEvent;
 };
 
-let socket: WebSocket | null = null;
-
 const listeners = new Map<ServerEvent, (() => void)[]>();
+let subscribed = false;
 
-function connect(onmessage: (m: EventMessage) => void) {
-  let protocol = "ws";
-  if (window.location.protocol === "https:") {
-    protocol = "wss";
+function ensureSubscriptions(onmessage: (m: EventMessage) => void) {
+  if (subscribed) {
+    return;
   }
+  subscribed = true;
+  const pb = getPb();
 
-  const ws = new WebSocket(`${protocol}://${window.location.host}/api/v1/ws/events`);
+  const throttled = new Map<ServerEvent, any>();
+  throttled.set(ServerEvent.LocationMutation, useThrottleFn(onmessage, 1000));
+  throttled.set(ServerEvent.ItemMutation, useThrottleFn(onmessage, 1000));
+  throttled.set(ServerEvent.LabelMutation, useThrottleFn(onmessage, 1000));
 
-  ws.onopen = () => {
-    console.debug("connected to server");
+  const notify = (event: ServerEvent) => {
+    const fn = throttled.get(event);
+    fn?.({ event });
+    listeners.get(event)?.forEach(c => c());
   };
 
-  ws.onclose = () => {
-    console.debug("disconnected from server");
-    setTimeout(() => {
-      connect(onmessage);
-    }, 3000);
+  const subscribe = (collection: string, event: ServerEvent) => {
+    pb.collection(collection)
+      .subscribe("*", () => notify(event))
+      .catch(err => {
+        console.warn(`realtime subscription failed for ${collection}`, err);
+      });
   };
 
-  ws.onerror = err => {
-    console.error("websocket error", err);
-  };
-
-  const thorttled = new Map<ServerEvent, any>();
-
-  thorttled.set(ServerEvent.LocationMutation, useThrottleFn(onmessage, 1000));
-  thorttled.set(ServerEvent.ItemMutation, useThrottleFn(onmessage, 1000));
-  thorttled.set(ServerEvent.LabelMutation, useThrottleFn(onmessage, 1000));
-
-  ws.onmessage = msg => {
-    const pm = JSON.parse(msg.data);
-    const fn = thorttled.get(pm.event);
-    if (fn) {
-      fn(pm);
-    }
-  };
-
-  socket = ws;
+  subscribe(COLLECTIONS.items, ServerEvent.ItemMutation);
+  subscribe(COLLECTIONS.locations, ServerEvent.LocationMutation);
+  subscribe(COLLECTIONS.labels, ServerEvent.LabelMutation);
 }
 
 export function onServerEvent(event: ServerEvent, callback: () => void) {
-  if (socket === null) {
-    connect(e => {
-      console.debug("received event", e);
-      listeners.get(e.event)?.forEach(c => c());
-    });
-  }
+  ensureSubscriptions(e => {
+    console.debug("received event", e);
+    listeners.get(e.event)?.forEach(c => c());
+  });
 
   onMounted(() => {
     if (!listeners.has(event)) {
@@ -75,7 +65,6 @@ export function onServerEvent(event: ServerEvent, callback: () => void) {
         got.filter(c => c !== callback)
       );
     }
-
     if (listeners.get(event)?.length === 0) {
       listeners.delete(event);
     }

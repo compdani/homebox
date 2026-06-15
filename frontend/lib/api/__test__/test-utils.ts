@@ -2,6 +2,8 @@ import { beforeAll, expect } from "vitest";
 import { faker } from "@faker-js/faker";
 import type { UserClient } from "../user";
 import { factories } from "./factories";
+import { configurePb } from "../../pocketbase/client";
+import * as config from "../../../test/config";
 
 const cache = {
   token: "",
@@ -12,6 +14,8 @@ const cache = {
  * to the test. This is useful for tests that are testing the user API itself.
  */
 export async function sharedUserClient(): Promise<UserClient> {
+  configurePb(config.BASE_URL);
+
   if (cache.token) {
     return factories.client.user(cache.token);
   }
@@ -31,13 +35,13 @@ export async function sharedUserClient(): Promise<UserClient> {
   }
 
   const { response: registerResp } = await api.register(testUser);
-  expect(registerResp.status).toBe(204);
+  expect(registerResp.status).toBe(200);
 
   const { response: loginResp, data: loginData } = await api.login(testUser.email, testUser.password);
   expect(loginResp.status).toBe(200);
 
   cache.token = loginData.token;
-  return factories.client.user(data.token);
+  return factories.client.user(loginData.token);
 }
 
 beforeAll(async () => {

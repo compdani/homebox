@@ -6,6 +6,11 @@ import type { ItemField, LabelCreate, LocationCreate, UserRegistration } from ".
 import * as config from "../../../../test/config";
 import { UserClient } from "../../user";
 import { Requests } from "../../../requests";
+import { configurePb } from "../../../pocketbase/client";
+
+function ensurePb() {
+  configurePb(config.BASE_URL);
+}
 
 function itemField(id = null): ItemField {
   return {
@@ -50,15 +55,17 @@ function label(): LabelCreate {
 }
 
 function publicClient(): PublicApi {
+  ensurePb();
   overrideParts(config.BASE_URL, "/api/v1");
   const requests = new Requests("");
   return new PublicApi(requests);
 }
 
 function userClient(token: string): UserClient {
+  ensurePb();
   overrideParts(config.BASE_URL, "/api/v1");
   const requests = new Requests("", token);
-  return new UserClient(requests, "");
+  return new UserClient(requests, token);
 }
 
 type TestUser = {

@@ -37,13 +37,37 @@ In some cases, you may want to skip some items such as consumables, or items tha
 
 :octicons-tag-24: 0.7.0
 
-Homebox has a built-in QR code generator that can be used to generate QR codes for your items. This is useful for tracking items with a mobile device. You can generate a QR code for any item by clicking the QR code icon in the top right of the item details page. The same can be done for the Labels and Locations page. Currently, support is limited to generating one-off QR Codes.
+Homebox generates QR codes for **products**, **locations**, and **unique items** (items not linked to a product). Product-linked placements use the product QR code.
 
-However, the API endpoint is available for generating QR codes on the fly for any item (or any other data) if you provide a valid API key in the query parameters. An example url would look like `/api/v1/qrcode?data=https://homebox.fly.dev/item/{uuid}`. Currently, the easiest way to get an API token is to use one from an existing URL of the QR Code in the API key, but this will be improved in the future.
+### Printable labels (PNG)
+
+Download ready-to-print PNG labels from entity detail pages:
+
+| Entity | Label size (landscape) | QR encodes |
+|--------|------------------------|------------|
+| Location | 3.15" × 1.97" | `/location/{id}` |
+| Product | 1.57" × 1.18" | `/product/{id}` |
+| Unique item | 1.57" × 1.18" | `/item/{id}` |
+
+API endpoints (authenticated): `/api/v1/locations/{id}/label.png`, `/api/v1/products/{id}/label.png`, `/api/v1/items/{id}/label.png` (unique items only).
+
+### In-app scanning
+
+Use **Scan** in the sidebar for three workflows:
+
+1. **Product then location** — scan a product (or unique item), then a location, then enter quantity.
+2. **Location then batch** — scan a location, then scan multiple products/items; quantity is prompted after each scan.
+3. **Remove product from location** — scan a product, then the location to remove from, then enter how many to remove. If you remove all units, the placement is deleted.
+
+Manual adds from **Create → Product to Location** always require a quantity.
+
+### Raw QR API
+
+The API endpoint `GET /api/v1/qrcode?data=...` generates a QR image for any URL-encoded payload.
 
 :octicons-tag-24: v0.8.0
 
-In version 0.8.0 We've added a custom label generation. On the tools page, there is now a link to the label-generator page where you can generate labels based on Asset ID for your inventory. These are still in early development, so please provide feedback. There's also more information on the implementation on the label generator page.
+The tools page still includes the asset-ID label generator for pre-printed tags (`/a/{assetId}` URLs). That flow is separate from product/location labels.
 
 [Demo](https://homebox.fly.dev/reports/label-generator)
 

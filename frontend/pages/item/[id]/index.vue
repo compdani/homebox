@@ -2,6 +2,7 @@
   import type { AnyDetail, Detail, Details } from "~~/components/global/DetailsSection/types";
   import { filterZeroValues } from "~~/components/global/DetailsSection/types";
   import type { ItemAttachment } from "~~/lib/api/types/data-contracts";
+  import { downloadAuthedFile } from "~~/lib/api/download";
   import MdiClose from "~icons/mdi/close";
   import MdiPackageVariant from "~icons/mdi/package-variant";
   import MdiPlus from "~icons/mdi/plus";
@@ -28,13 +29,23 @@
     if (error) {
       toast.error("Failed to load item");
       navigateTo("/home");
-      return;
+      return null;
     }
     return data;
   });
-  onMounted(() => {
-    refresh();
-  });
+
+  const isUniqueItem = computed(() => !item.value?.product?.id);
+  const qrData = computed(() => (item.value ? `${window.location.origin}/item/${item.value.id}` : ""));
+
+  async function downloadLabel() {
+    if (!item.value) {
+      return;
+    }
+    const ok = await downloadAuthedFile(api.items.labelURL(item.value.id), "label.png");
+    if (!ok) {
+      toast.error("Failed to download label");
+    }
+  }
 
   const lastRoute = ref(route.fullPath);
   watchEffect(() => {
@@ -152,6 +163,12 @@
     }
 
     const ret: Details = [
+      {
+        name: "Product",
+        type: item.value.product ? "link" : undefined,
+        text: item.value.product?.name || "",
+        href: item.value.product ? `/product/${item.value.product.id}` : undefined,
+      },
       {
         name: "Quantity",
         text: item.value?.quantity,
@@ -412,8 +429,7 @@
     }
 
     const resp = await api.items.fullpath(item.value.id);
-    if (resp.error) {
-      toast.error("Failed to load item");
+    if (resp.error || !resp.data) {
       return [];
     }
 
@@ -421,7 +437,7 @@
   });
 
   const items = computedAsync(async () => {
-    if (!item.value) {
+    if (!item.value || item.value.product) {
       return [];
     }
 
@@ -429,8 +445,7 @@
       parentIds: [item.value.id],
     });
 
-    if (resp.error) {
-      toast.error("Failed to load items");
+    if (resp.error || !resp.data) {
       return [];
     }
 
@@ -521,7 +536,11 @@
                 <input v-model="preferences.showEmpty" type="checkbox" class="toggle toggle-primary" />
                 <span class="label-text ml-4"> Show Empty </span>
               </label>
-              <PageQRCode />
+              <PageQRCode v-if="isUniqueItem" :data="qrData" />
+              <BaseButton v-if="isUniqueItem" size="sm" @click="downloadLabel">
+                <MdiDownload class="mr-1" />
+                Label
+              </BaseButton>
             </div>
           </template>
           <DetailsSection :details="itemDetails">

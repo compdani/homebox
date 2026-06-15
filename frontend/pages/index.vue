@@ -249,7 +249,7 @@
         </div>
       </div>
     </div>
-    <footer v-if="status" class="mt-auto text-center w-full bottom-0 pb-4">
+    <footer v-if="status?.build" class="mt-auto text-center w-full bottom-0 pb-4">
       <p class="text-center text-sm">Version: {{ status.build.version }} ~ Build: {{ status.build.commit }}</p>
     </footer>
   </div>

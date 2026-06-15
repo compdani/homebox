@@ -99,6 +99,7 @@
   const { setTheme } = useTheme();
 
   const auth = useAuthContext();
+  const isOwner = computed(() => auth.user?.isOwner ?? false);
 
   const details = computed(() => {
     console.log(auth.user);
@@ -358,7 +359,7 @@
         <div class="p-4">
           <div class="flex gap-2">
             <BaseButton size="sm" @click="openPassChange"> Change Password </BaseButton>
-            <BaseButton size="sm" @click="generateToken"> Generate Invite Link </BaseButton>
+            <BaseButton v-if="isOwner" size="sm" @click="generateToken"> Generate Invite Link </BaseButton>
           </div>
           <div v-if="token" class="pt-4 flex items-center pl-1">
             <CopyText class="mr-2 btn-primary btn btn-outline btn-square btn-sm" :text="tokenUrl" />
@@ -427,12 +428,13 @@
         </template>
 
         <div v-if="group && currencies && currencies.length > 0" class="p-5 pt-0">
-          <FormSelect v-model="currency" label="Currency Format" :items="currencies" />
+          <FormSelect v-model="currency" label="Currency Format" :items="currencies" :disabled="!isOwner" />
           <p class="m-2 text-sm">Example: {{ currencyExample }}</p>
 
-          <div class="mt-4">
+          <div v-if="isOwner" class="mt-4">
             <BaseButton size="sm" @click="updateGroup"> Update Group </BaseButton>
           </div>
+          <p v-else class="mt-4 text-sm italic">Only the group owner can change shared group settings.</p>
         </div>
       </BaseCard>
 
@@ -500,7 +502,7 @@
         </div>
       </BaseCard>
     </BaseContainer>
-    <footer v-if="status" class="text-center w-full bottom-0 pb-4">
+    <footer v-if="status?.build" class="text-center w-full bottom-0 pb-4">
       <p class="text-center text-sm">Version: {{ status.build.version }} ~ Build: {{ status.build.commit }}</p>
     </footer>
   </div>

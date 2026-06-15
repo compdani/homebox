@@ -1,4 +1,5 @@
-import { BaseAPI, route } from "../base";
+import { route } from "../base";
+import { Requests } from "~~/lib/requests";
 import type {
   CurrenciesCurrency,
   Group,
@@ -7,7 +8,9 @@ import type {
   GroupUpdate,
 } from "../types/data-contracts";
 
-export class GroupApi extends BaseAPI {
+export class GroupApi {
+  constructor(private http: Requests) {}
+
   createInvitation(data: GroupInvitationCreate) {
     return this.http.post<GroupInvitationCreate, GroupInvitation>({
       url: route("/groups/invitations"),

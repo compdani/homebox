@@ -13,6 +13,8 @@
 
   const labelId = computed<string>(() => route.params.id as string);
 
+  const qrData = computed(() => (label.value ? `${window.location.origin}/label/${label.value.id}` : ""));
+
   const { data: label } = useAsyncData(labelId.value, async () => {
     const { data, error } = await api.labels.get(labelId.value);
     if (error) {
@@ -127,7 +129,7 @@
             </div>
             <div class="ml-auto mt-2 flex flex-wrap items-center justify-between gap-3">
               <div class="btn-group">
-                <PageQRCode class="dropdown-left" />
+                <PageQRCode class="dropdown-left" :data="qrData" />
                 <BaseButton size="sm" @click="openUpdate">
                   <MdiPencil class="mr-1" />
                   Edit
