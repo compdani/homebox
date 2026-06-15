@@ -59,7 +59,7 @@
 
   const selected = computed<Record<number, boolean>>(() => {
     const obj: Record<number, boolean> = {};
-    value.value.forEach(itm => {
+    (value.value ?? []).forEach(itm => {
       const idx = props.items.findIndex(item => item[props.name] === itm.name);
       obj[idx] = true;
     });
@@ -68,10 +68,11 @@
 
   function toggle(index: number) {
     const item = props.items[index];
+    const current = value.value ?? [];
     if (selected.value[index]) {
-      value.value = value.value.filter(itm => itm.name !== item.name);
+      value.value = current.filter(itm => itm.name !== item.name);
     } else {
-      value.value = [...value.value, item];
+      value.value = [...current, item];
     }
   }
 </script>

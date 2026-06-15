@@ -43,8 +43,11 @@ export function parseDate<T>(obj: T, keys: Array<keyof T> = []): T {
       const split = value.split("-");
 
       if (split.length !== 3) {
-        console.log(`Invalid date format: ${value}`);
-        throw new Error(`Invalid date format: ${value}`);
+        console.warn(`Invalid date format: ${value}`);
+        const dt = new Date();
+        dt.setFullYear(1);
+        result[key] = dt;
+        return;
       }
 
       const [year, month, day] = split;

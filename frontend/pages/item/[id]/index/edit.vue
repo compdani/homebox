@@ -2,7 +2,6 @@
   import type { ItemAttachment, ItemField, ItemOut, ItemUpdate } from "~~/lib/api/types/data-contracts";
   import { AttachmentTypes } from "~~/lib/api/types/non-generated";
   import { useLabelStore } from "~~/stores/labels";
-  import { useLocationStore } from "~~/stores/locations";
   import { capitalize } from "~~/lib/strings";
   import Autocomplete from "~~/components/Form/Autocomplete.vue";
   import MdiDelete from "~icons/mdi/delete";
@@ -13,6 +12,10 @@
     middleware: ["auth"],
   });
 
+  const props = defineProps<{
+    item: ItemOut;
+  }>();
+
   const route = useRoute();
   const api = useUserApi();
   const toast = useNotifier();
@@ -20,57 +23,44 @@
 
   const itemId = computed<string>(() => route.params.id as string);
 
-  const locationStore = useLocationStore();
-  const locations = computed(() => locationStore.allLocations);
-
   const labelStore = useLabelStore();
   const labels = computed(() => labelStore.labels);
 
-  const {
-    data: nullableItem,
-    refresh,
-    pending: requestPending,
-  } = useAsyncData(async () => {
-    const { data, error } = await api.items.get(itemId.value);
-    if (error) {
-      toast.error("Failed to load item");
-      navigateTo("/home");
-      return;
+  function cloneItem(source: ItemOut): ItemOut {
+    return {
+      ...source,
+      labels: [...(source.labels ?? [])],
+      fields: (source.fields ?? []).map(field => ({ ...field })),
+      attachments: [...(source.attachments ?? [])],
+      location: source.location ? { ...source.location } : null,
+      product: source.product ? { ...source.product } : null,
+      parent: source.parent ? { ...source.parent } : null,
+    };
+  }
+
+  const form = reactive(cloneItem(props.item));
+  const parent = ref(props.item.parent ?? null);
+
+  watch(
+    () => props.item,
+    item => {
+      Object.assign(form, cloneItem(item));
+      parent.value = item.parent ?? null;
     }
-
-    if (locations && data.location?.id) {
-      // @ts-expect-error - we know the locations is valid
-      const location = locations.value.find(l => l.id === data.location.id);
-      if (location) {
-        data.location = location;
-      }
-    }
-
-    if (data.parent) {
-      parent.value = data.parent;
-    }
-
-    return data;
-  });
-
-  const item = computed<ItemOut>(() => nullableItem.value as ItemOut);
-
-  onMounted(() => {
-    refresh();
-  });
+  );
 
   async function saveItem() {
-    if (!item.value.location?.id) {
+    if (!form.location?.id) {
       toast.error("Failed to save item: no location selected");
       return;
     }
 
     const payload: ItemUpdate = {
-      ...item.value,
-      locationId: item.value.location?.id,
-      labelIds: item.value.labels.map(l => l.id),
+      ...form,
+      locationId: form.location.id,
+      labelIds: (form.labels ?? []).map(l => l.id),
       parentId: parent.value ? parent.value.id : null,
-      assetId: item.value.assetId,
+      assetId: form.assetId,
     };
 
     const { error } = await api.items.update(itemId.value, payload);
@@ -251,11 +241,11 @@
 
   function uploadImage(e: Event) {
     const files = (e.target as HTMLInputElement).files;
-    if (!files || !files.item(0)) {
+    if (!files || !files.form(0)) {
       return;
     }
 
-    const first = files.item(0);
+    const first = files.form(0);
     if (!first) {
       return;
     }
@@ -283,7 +273,7 @@
 
     toast.success("Attachment uploaded");
 
-    item.value.attachments = data.attachments;
+    form.attachments = data.attachments;
   }
 
   const confirm = useConfirm();
@@ -303,7 +293,7 @@
     }
 
     toast.success("Attachment deleted");
-    item.value.attachments = item.value.attachments.filter(a => a.id !== attachmentId);
+    form.attachments = form.attachments.filter(a => a.id !== attachmentId);
   }
 
   const editState = reactive({
@@ -346,7 +336,7 @@
       return;
     }
 
-    item.value.attachments = data.attachments;
+    form.attachments = data.attachments;
 
     editState.loading = false;
     editState.modal = false;
@@ -359,7 +349,7 @@
   }
 
   function addField() {
-    item.value.fields.push({
+    form.fields.push({
       id: null,
       name: "Field Name",
       type: "text",
@@ -371,10 +361,9 @@
   }
 
   const { query, results } = useItemSearch(api, { immediate: false });
-  const parent = ref();
 
   async function deleteItem() {
-    const confirmed = await confirm.open("Are you sure you want to delete this item?");
+    const confirmed = await confirm.open("Are you sure you want to delete this form?");
 
     if (!confirmed.data) {
       return;
@@ -382,7 +371,7 @@
 
     const { error } = await api.items.delete(itemId.value);
     if (error) {
-      toast.error("Failed to delete item");
+      toast.error("Failed to delete form");
       return;
     }
     toast.success("Item deleted");
@@ -413,7 +402,7 @@
 </script>
 
 <template>
-  <div v-if="item" class="pb-8">
+  <div class="pb-8">
     <BaseModal v-model="editState.modal">
       <template #title> Attachment Edit </template>
 
@@ -457,15 +446,15 @@
           Delete
         </BaseButton>
       </div>
-      <div v-if="!requestPending" class="space-y-6">
+      <div class="space-y-6">
         <BaseCard class="overflow-visible">
           <template #title> Edit Details </template>
           <template #title-actions>
             <div class="flex flex-wrap justify-between items-center mt-2 gap-4"></div>
           </template>
           <div class="px-5 pt-2 border-t mb-6 grid md:grid-cols-2 gap-4">
-            <LocationSelector v-model="item.location" />
-            <FormMultiselect v-model="item.labels" label="Labels" :items="labels ?? []" />
+            <LocationSelector v-model="form.location" />
+            <FormMultiselect v-model="form.labels" label="Labels" :items="labels ?? []" />
             <Autocomplete
               v-if="preferences.editorAdvancedView"
               v-model="parent"
@@ -480,29 +469,29 @@
           <div class="border-t border-gray-300 sm:p-0">
             <div v-for="field in mainFields" :key="field.ref" class="sm:divide-y sm:divide-gray-300 grid grid-cols-1">
               <div class="pt-2 px-4 pb-4 sm:px-6 border-b border-gray-300">
-                <FormTextArea v-if="field.type === 'textarea'" v-model="item[field.ref]" :label="field.label" inline />
+                <FormTextArea v-if="field.type === 'textarea'" v-model="form[field.ref]" :label="field.label" inline />
                 <FormTextField
                   v-else-if="field.type === 'text'"
-                  v-model="item[field.ref]"
+                  v-model="form[field.ref]"
                   :label="field.label"
                   inline
                 />
                 <FormTextField
                   v-else-if="field.type === 'number'"
-                  v-model.number="item[field.ref]"
+                  v-model.number="form[field.ref]"
                   type="number"
                   :label="field.label"
                   inline
                 />
                 <FormDatePicker
                   v-else-if="field.type === 'date'"
-                  v-model="item[field.ref]"
+                  v-model="form[field.ref]"
                   :label="field.label"
                   inline
                 />
                 <FormCheckbox
                   v-else-if="field.type === 'checkbox'"
-                  v-model="item[field.ref]"
+                  v-model="form[field.ref]"
                   :label="field.label"
                   inline
                 />
@@ -515,7 +504,7 @@
           <template #title> Custom Fields </template>
           <div class="px-5 border-t divide-y divide-gray-300 space-y-4">
             <div
-              v-for="(field, idx) in item.fields"
+              v-for="(field, idx) in form.fields"
               :key="`field-${idx}`"
               class="grid grid-cols-2 md:grid-cols-4 gap-2"
             >
@@ -524,7 +513,7 @@
               <div class="flex items-end col-span-3">
                 <FormTextField v-model="field.textValue" label="Value" />
                 <div class="tooltip" data-tip="Delete">
-                  <button class="btn btn-sm btn-square mb-2 ml-2" @click="item.fields.splice(idx, 1)">
+                  <button class="btn btn-sm btn-square mb-2 ml-2" @click="form.fields.splice(idx, 1)">
                     <MdiDelete />
                   </button>
                 </div>
@@ -566,7 +555,7 @@
           <div class="border-t border-gray-300 p-4">
             <ul role="list" class="divide-y divide-gray-400 rounded-md border border-gray-400">
               <li
-                v-for="attachment in item.attachments"
+                v-for="attachment in form.attachments"
                 :key="attachment.id"
                 class="grid grid-cols-6 justify-between py-3 pl-3 pr-4 text-sm"
               >
@@ -604,29 +593,29 @@
               class="sm:divide-y sm:divide-gray-300 grid grid-cols-1"
             >
               <div class="pt-2 px-4 pb-4 sm:px-6 border-b border-gray-300">
-                <FormTextArea v-if="field.type === 'textarea'" v-model="item[field.ref]" :label="field.label" inline />
+                <FormTextArea v-if="field.type === 'textarea'" v-model="form[field.ref]" :label="field.label" inline />
                 <FormTextField
                   v-else-if="field.type === 'text'"
-                  v-model="item[field.ref]"
+                  v-model="form[field.ref]"
                   :label="field.label"
                   inline
                 />
                 <FormTextField
                   v-else-if="field.type === 'number'"
-                  v-model.number="item[field.ref]"
+                  v-model.number="form[field.ref]"
                   type="number"
                   :label="field.label"
                   inline
                 />
                 <FormDatePicker
                   v-else-if="field.type === 'date'"
-                  v-model="item[field.ref]"
+                  v-model="form[field.ref]"
                   :label="field.label"
                   inline
                 />
                 <FormCheckbox
                   v-else-if="field.type === 'checkbox'"
-                  v-model="item[field.ref]"
+                  v-model="form[field.ref]"
                   :label="field.label"
                   inline
                 />
@@ -646,29 +635,29 @@
               class="sm:divide-y sm:divide-gray-300 grid grid-cols-1"
             >
               <div class="pt-2 px-4 pb-4 sm:px-6 border-b border-gray-300">
-                <FormTextArea v-if="field.type === 'textarea'" v-model="item[field.ref]" :label="field.label" inline />
+                <FormTextArea v-if="field.type === 'textarea'" v-model="form[field.ref]" :label="field.label" inline />
                 <FormTextField
                   v-else-if="field.type === 'text'"
-                  v-model="item[field.ref]"
+                  v-model="form[field.ref]"
                   :label="field.label"
                   inline
                 />
                 <FormTextField
                   v-else-if="field.type === 'number'"
-                  v-model.number="item[field.ref]"
+                  v-model.number="form[field.ref]"
                   type="number"
                   :label="field.label"
                   inline
                 />
                 <FormDatePicker
                   v-else-if="field.type === 'date'"
-                  v-model="item[field.ref]"
+                  v-model="form[field.ref]"
                   :label="field.label"
                   inline
                 />
                 <FormCheckbox
                   v-else-if="field.type === 'checkbox'"
-                  v-model="item[field.ref]"
+                  v-model="form[field.ref]"
                   :label="field.label"
                   inline
                 />
@@ -684,29 +673,29 @@
           <div class="border-t border-gray-300 sm:p-0">
             <div v-for="field in soldFields" :key="field.ref" class="sm:divide-y sm:divide-gray-300 grid grid-cols-1">
               <div class="pt-2 pb-4 px-4 sm:px-6 border-b border-gray-300">
-                <FormTextArea v-if="field.type === 'textarea'" v-model="item[field.ref]" :label="field.label" inline />
+                <FormTextArea v-if="field.type === 'textarea'" v-model="form[field.ref]" :label="field.label" inline />
                 <FormTextField
                   v-else-if="field.type === 'text'"
-                  v-model="item[field.ref]"
+                  v-model="form[field.ref]"
                   :label="field.label"
                   inline
                 />
                 <FormTextField
                   v-else-if="field.type === 'number'"
-                  v-model.number="item[field.ref]"
+                  v-model.number="form[field.ref]"
                   type="number"
                   :label="field.label"
                   inline
                 />
                 <FormDatePicker
                   v-else-if="field.type === 'date'"
-                  v-model="item[field.ref]"
+                  v-model="form[field.ref]"
                   :label="field.label"
                   inline
                 />
                 <FormCheckbox
                   v-else-if="field.type === 'checkbox'"
-                  v-model="item[field.ref]"
+                  v-model="form[field.ref]"
                   :label="field.label"
                   inline
                 />

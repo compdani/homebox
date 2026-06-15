@@ -27,4 +27,11 @@ describe("parseDate should work as expected", () => {
     expect(result.key1).toBeInstanceOf(Date);
     expect(result.key2).toBeInstanceOf(Date);
   });
+
+  test("parseDate tolerates invalid date strings", () => {
+    const obj = { purchaseTime: "invalid" };
+    const result = parseDate(obj, ["purchaseTime"]);
+    expect(result.purchaseTime).toBeInstanceOf(Date);
+    expect((result.purchaseTime as Date).getFullYear()).toBe(1);
+  });
 });
